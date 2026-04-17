@@ -195,7 +195,7 @@ class LLMWiki:
         slug = topic.replace(" ", "_")
         url = self.TRUSTED_SOURCES["wikipedia"] + slug
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": "TrainingArena/3.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "TrainingArena/3.0 (https://github.com/ChrisX101010/training-arena)"})
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode())
             if "extract" not in data or len(data["extract"]) < 20:

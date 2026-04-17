@@ -1,10 +1,20 @@
-"""Evaluation Rubric - Multi-dimensional scoring (inspired by NVIDIA QCalEval)."""
+"""Evaluation Rubric - 6-dimension scoring.
+
+IMPORTANT: If the LLM judge is unavailable (Ollama not running),
+this raises JudgeUnavailableError so the caller can fall back to
+the heuristic scorer. It does NOT silently return 0.5 for everything.
+"""
 
 import json
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List
 from dataclasses import dataclass, field
 from enum import Enum
+
+
+class JudgeUnavailableError(Exception):
+    """Raised when the LLM judge cannot be reached."""
+    pass
 
 
 class QuestionType(Enum):
@@ -25,53 +35,38 @@ class RubricScore:
     metadata: Dict = field(default_factory=dict)
 
 
-@dataclass
-class EvaluationResult:
-    model_name: str
-    prompt: str
-    response: str
-    domain: str
-    scores: List[RubricScore]
-    overall_score: float
-    timestamp: str
-    judge_model: str
-
-
 class EvaluationRubric:
     RUBRIC_PROMPTS = {
         QuestionType.FACTUAL_ACCURACY: (
-            "Evaluate factual accuracy (0.0-1.0). Consider: verifiable statements, false claims, numerical accuracy.\n"
+            "Evaluate factual accuracy (0.0-1.0). "
             'Return JSON: {"score": <float>, "confidence": <float>, "reasoning": "<brief>"}'
         ),
         QuestionType.COMPLETENESS: (
-            "Evaluate completeness (0.0-1.0). Consider: all aspects covered, omissions, depth.\n"
+            "Evaluate completeness (0.0-1.0). "
             'Return JSON: {"score": <float>, "confidence": <float>, "reasoning": "<brief>"}'
         ),
         QuestionType.CONCISENESS: (
-            "Evaluate conciseness (0.0-1.0). Consider: repetition, verbosity, density.\n"
+            "Evaluate conciseness (0.0-1.0). "
             'Return JSON: {"score": <float>, "confidence": <float>, "reasoning": "<brief>"}'
         ),
         QuestionType.REASONING_QUALITY: (
-            "Evaluate reasoning quality (0.0-1.0). Consider: logical structure, conclusions, fallacies.\n"
+            "Evaluate reasoning quality (0.0-1.0). "
             'Return JSON: {"score": <float>, "confidence": <float>, "reasoning": "<brief>"}'
         ),
         QuestionType.SOURCE_ATTRIBUTION: (
-            "Evaluate source attribution (0.0-1.0). Consider: references, fact vs inference.\n"
+            "Evaluate source attribution (0.0-1.0). "
             'Return JSON: {"score": <float>, "confidence": <float>, "reasoning": "<brief>"}'
         ),
         QuestionType.HALLUCINATION_DETECTION: (
-            "Evaluate hallucinations (0.0-1.0, higher = fewer). Consider: contradictions, invented details.\n"
+            "Evaluate hallucinations (0.0-1.0, higher = fewer). "
             'Return JSON: {"score": <float>, "confidence": <float>, "reasoning": "<brief>"}'
         ),
     }
 
     DEFAULT_WEIGHTS = {
-        QuestionType.FACTUAL_ACCURACY: 0.30,
-        QuestionType.COMPLETENESS: 0.20,
-        QuestionType.CONCISENESS: 0.10,
-        QuestionType.REASONING_QUALITY: 0.20,
-        QuestionType.SOURCE_ATTRIBUTION: 0.10,
-        QuestionType.HALLUCINATION_DETECTION: 0.10,
+        QuestionType.FACTUAL_ACCURACY: 0.30, QuestionType.COMPLETENESS: 0.20,
+        QuestionType.CONCISENESS: 0.10, QuestionType.REASONING_QUALITY: 0.20,
+        QuestionType.SOURCE_ATTRIBUTION: 0.10, QuestionType.HALLUCINATION_DETECTION: 0.10,
     }
 
     DOMAIN_WEIGHTS = {
@@ -87,9 +82,30 @@ class EvaluationRubric:
                  enabled_dimensions: List[QuestionType] = None):
         self.judge_model_name = judge_model_name
         self.enabled_dimensions = enabled_dimensions or list(QuestionType)
+        self._judge_tested = False
+        self._judge_available = False
 
     def evaluate_response(self, hub, prompt: str, response: str,
                           domain: str = "general") -> Dict[QuestionType, RubricScore]:
+        """Evaluate a response with the LLM judge.
+
+        Raises JudgeUnavailableError if the judge can't be reached,
+        so the caller can use a different scoring method.
+        """
+        # Test judge availability once
+        if not self._judge_tested:
+            self._judge_tested = True
+            try:
+                hub.generate_response(self.judge_model_name, "test", max_tokens=5)
+                self._judge_available = True
+                print(f"  ✅ Judge {self.judge_model_name} available")
+            except Exception:
+                self._judge_available = False
+                print(f"  ⚠️ Judge {self.judge_model_name} unavailable — using heuristic scoring")
+
+        if not self._judge_available:
+            raise JudgeUnavailableError(f"Judge {self.judge_model_name} not available")
+
         scores = {}
         for qtype in self.enabled_dimensions:
             eval_prompt = (
@@ -101,7 +117,7 @@ class EvaluationRubric:
                 parsed = self._parse_json(raw)
                 scores[qtype] = RubricScore(
                     question_type=qtype.value,
-                    score=parsed.get("score", 0.5),
+                    score=max(0.0, min(1.0, parsed.get("score", 0.5))),
                     confidence=parsed.get("confidence", 0.5),
                     reasoning=parsed.get("reasoning", ""),
                 )
