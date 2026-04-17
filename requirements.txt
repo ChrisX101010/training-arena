@@ -1,0 +1,28 @@
+# Core
+pyyaml>=6.0
+torch>=2.0
+transformers>=4.35
+datasets>=2.14
+
+# Rating system (multivariate, bias-aware)
+polyrating>=0.1
+
+# Arena evaluation (optional — falls back to heuristic)
+# deepeval>=0.21
+
+# Wiki
+gitpython>=3.1
+
+# Wiki vector search (optional)
+# sentence-transformers>=2.2
+# chromadb>=0.4
+
+# Dashboard
+streamlit>=1.28
+pandas>=2.0
+
+# Ollama client
+ollama>=0.1
+
+# Axiom Wiki (optional — install separately)
+# npm install -g axiom-wiki

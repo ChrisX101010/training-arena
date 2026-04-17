@@ -1,0 +1,53 @@
+profiles:
+  high_end:
+    min_vram_gb: 40
+    settings:
+      use_flash_attn: true
+      kv_cache_bits: 4
+      precision: "bf16"
+      batch_size: 8
+      max_seq_length: 8192
+
+  mid_range:
+    min_vram_gb: 16
+    settings:
+      use_flash_attn: true
+      kv_cache_bits: 4
+      precision: "bf16"
+      batch_size: 4
+      max_seq_length: 4096
+
+  entry_level:
+    min_vram_gb: 8
+    settings:
+      use_flash_attn: true
+      kv_cache_bits: 3
+      precision: "fp16"
+      batch_size: 2
+      max_seq_length: 2048
+
+  low_end:
+    min_vram_gb: 4
+    settings:
+      use_flash_attn: false
+      kv_cache_bits: 3
+      precision: "fp16"
+      batch_size: 1
+      max_seq_length: 1024
+
+  cpu:
+    settings:
+      device: "cpu"
+      batch_size: 1
+      max_seq_length: 512
+
+thermal:
+  target_temp_c: 72
+  max_temp_c: 80
+
+model_overrides:
+  "Qwen/Qwen2.5-0.5B":
+    batch_size: 8
+    max_seq_length: 4096
+  "distilgpt2":
+    batch_size: 16

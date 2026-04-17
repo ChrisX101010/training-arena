@@ -1,0 +1,67 @@
+arena:
+  judge_model: phi3:mini
+  prompts_file: prompts/default.json
+  max_prompts_per_match: 7
+
+models:
+  # HuggingFace models
+  - name: gpt2
+    provider: huggingface
+    role: contestant
+  - name: distilgpt2
+    provider: huggingface
+    role: contestant
+  - name: Qwen/Qwen2.5-0.5B
+    provider: huggingface
+    role: contestant
+
+  # Qwen 3.5 (upgrade path — install via Ollama: ollama pull qwen3.5:4b)
+  # - name: qwen3.5:4b
+  #   provider: ollama
+  #   role: contestant
+  #   description: "Qwen 3.5 4B — sweet spot for RTX 3050 4GB (Q4)"
+
+  # Ollama models
+  - name: phi3:mini
+    provider: ollama
+    role: judge
+    enabled: false
+  - name: llama3.2:1b
+    provider: ollama
+    role: contestant
+    enabled: false
+
+  # Distilled models (auto-generated)
+  - name: gpt2-round_1
+    path: ./results/bootcamp/round_1/gpt2/final
+    provider: huggingface
+    role: distilled
+  - name: distilgpt2-round_1
+    path: ./results/bootcamp/round_1/distilgpt2/final
+    provider: huggingface
+    role: distilled
+
+training:
+  student_model: distilgpt2
+  output_dir: ./results/distilled
+  num_epochs: 3
+  learning_rate: 5e-5
+  batch_size: 2
+  max_length: 128
+  exclude_from_training:
+    - phi3:mini
+    - llama3.2:1b
+  trainable_only: true
+
+wiki:
+  path: ./llm_wiki
+  auto_pull: true
+  remote_url: ""
+  # Axiom Wiki integration (Karpathy compounding pattern)
+  # Set this to your local axiom-wiki directory
+  axiom_wiki_path: ""
+  # Or install globally: npm install -g axiom-wiki
+
+dashboard:
+  host: 0.0.0.0
+  port: 8501

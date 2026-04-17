@@ -1,0 +1,11 @@
+{
+  "prompts": [
+    {"id": 1, "text": "What is the capital of France?", "category": "knowledge"},
+    {"id": 2, "text": "Explain the concept of gravity in simple terms.", "category": "explanation"},
+    {"id": 3, "text": "Write a short poem about a cat.", "category": "creative"},
+    {"id": 4, "text": "What is 2 + 2?", "category": "math"},
+    {"id": 5, "text": "Who wrote Romeo and Juliet?", "category": "knowledge"},
+    {"id": 6, "text": "What is the boiling point of water in Celsius?", "category": "science"},
+    {"id": 7, "text": "Name three primary colors.", "category": "knowledge"}
+  ]
+}
