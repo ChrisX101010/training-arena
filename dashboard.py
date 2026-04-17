@@ -51,17 +51,12 @@ def render_arena(db, wiki):
     data_json = json.dumps({"leaderboard": rankings, "matches": matches,
                              "evolution": evo_log, "wiki": wiki_stats}, default=str)
 
-    # The HTML is built as a regular string, then data is injected via .replace()
-    # to avoid f-string brace escaping nightmares
     html_template = open(Path(__file__).parent / "arena_ui.html", "r").read() if (Path(__file__).parent / "arena_ui.html").exists() else None
-
-    # Inline the HTML since we can't guarantee the file exists
     html = _build_arena_html(data_json)
     components.html(html, height=820, scrolling=True)
 
 
 def _build_arena_html(data_json):
-    # Using string concatenation instead of f-strings to avoid {{ }} hell
     return '''<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
@@ -186,6 +181,8 @@ body{background:transparent;font-family:'Outfit',sans-serif;color:#e0e0e0;overfl
 <g id="red-arm-back"><rect x="-30" y="10" width="10" height="30" rx="4" fill="#9a1c1c"/><circle cx="-25" cy="39" r="7" fill="#9a1c1c"/></g>
 <g id="red-arm-front" style="transition:transform .1s ease;transform-origin:28px 10px"><rect x="20" y="10" width="10" height="30" rx="4" fill="#d42b2b"/><circle cx="25" cy="39" r="8" fill="#d42b2b" stroke="#f04848" stroke-width="1.5" id="red-fist"/></g>
 <rect x="-5" y="-8" width="10" height="14" rx="3" fill="#9a1c1c"/>
+<!-- Neck (thin, stretches on KO) -->
+<rect x="-4" y="-14" width="8" height="8" rx="2" fill="#b01c1c" id="red-neck"/>
 <g id="red-head" style="transition:transform .3s cubic-bezier(.6,-0.28,.74,.05)">
 <rect x="-17" y="-38" width="34" height="32" rx="8" fill="#d42b2b"/>
 <rect x="-12" y="-30" width="24" height="12" rx="3" fill="#9a1c1c"/>
@@ -195,7 +192,7 @@ body{background:transparent;font-family:'Outfit',sans-serif;color:#e0e0e0;overfl
 </g>
 </g></g>
 
-<!-- BLUE BOMBER (mirrored) -->
+<!-- BLUE BOMBER (mirrored) - FULLY FIXED -->
 <g id="blue-robot" style="transition:transform .3s ease">
 <g transform="translate(310,105) scale(-1,1)">
 <ellipse cx="0" cy="82" rx="28" ry="6" fill="rgba(0,0,0,.25)"/>
@@ -209,6 +206,8 @@ body{background:transparent;font-family:'Outfit',sans-serif;color:#e0e0e0;overfl
 <g id="blue-arm-back"><rect x="-30" y="10" width="10" height="30" rx="4" fill="#1c5a9a"/><circle cx="-25" cy="39" r="7" fill="#1c5a9a"/></g>
 <g id="blue-arm-front" style="transition:transform .1s ease;transform-origin:28px 10px"><rect x="20" y="10" width="10" height="30" rx="4" fill="#2b8dd4"/><circle cx="25" cy="39" r="8" fill="#2b8dd4" stroke="#4888f0" stroke-width="1.5" id="blue-fist"/></g>
 <rect x="-5" y="-8" width="10" height="14" rx="3" fill="#1c5a9a"/>
+<!-- Neck (thin, stretches on KO) -->
+<rect x="-4" y="-14" width="8" height="8" rx="2" fill="#1c3a7a" id="blue-neck"/>
 <g id="blue-head" style="transition:transform .3s cubic-bezier(.6,-0.28,.74,.05)">
 <rect x="-17" y="-38" width="34" height="32" rx="8" fill="#2b8dd4"/>
 <rect x="-12" y="-30" width="24" height="12" rx="3" fill="#1c5a9a"/>
@@ -264,7 +263,6 @@ document.querySelectorAll('.tab').forEach(function(t){
   });
 });
 
-// ═══ FIGHT ═══
 function startFight(){
   if(fighting||local.length<2) return;
   fighting=true;
@@ -272,12 +270,9 @@ function startFight(){
   document.getElementById('fight-btn').textContent='FIGHTING...';
   redHP=100;blueHP=100;currentRound=1;timerSec=0;
   updateHP();hideResult();resetRobots();
-
-  // Slide robots toward center
   slideIn();
   announce('ROUND 1');
   setTimeout(function(){hideAnnounce()},1000);
-
   timerIv=setInterval(function(){timerSec++;updateTimer()},1000);
   setTimeout(function(){runRound(1)},1200);
 }
@@ -286,13 +281,9 @@ function runRound(rnd){
   if(rnd>totalRounds||redHP<=0||blueHP<=0){endFight();return}
   currentRound=rnd;
   document.getElementById('round-display').textContent='ROUND '+rnd+' / '+totalRounds;
-
   var ms=DATA.matches;
   var m=ms.length>0?ms[Math.floor(Math.random()*Math.min(ms.length,8))]:{score_a:Math.random()*.5+.3,score_b:Math.random()*.5+.3};
-
   setStatus('Round '+rnd+': Models generating...',true);
-
-  // Red punches
   setTimeout(function(){punchRed()},500);
   setTimeout(function(){
     resetRedArm();
@@ -303,8 +294,6 @@ function runRound(rnd){
     setStatus('Red scores '+(m.score_a||0).toFixed(3),true);
   },700);
   setTimeout(function(){resetBlueRecoil()},1000);
-
-  // Blue punches
   setTimeout(function(){punchBlue()},1500);
   setTimeout(function(){
     resetBlueArm();
@@ -315,8 +304,6 @@ function runRound(rnd){
     setStatus('Blue scores '+(m.score_b||0).toFixed(3),true);
   },1700);
   setTimeout(function(){resetRedRecoil()},2000);
-
-  // Next round
   setTimeout(function(){
     if(redHP<=0||blueHP<=0){endFight()}
     else if(rnd<totalRounds){
@@ -329,11 +316,9 @@ function runRound(rnd){
 function endFight(){
   clearInterval(timerIv);
   resetRedArm();resetBlueArm();
-
   var winner,loser;
   if(redHP>blueHP){
     winner='red';loser='blue';
-    // LOSER's head pops up (authentic Rock Em Sock Em!)
     popHead('blue');
     announce("KNOCK HIS\\nBLOCK OFF!");
     setStatus('RED ROCKER WINS!','ko');
@@ -344,12 +329,10 @@ function endFight(){
     setStatus('BLUE BOMBER WINS!','ko');
   }else{
     winner='draw';
-    // Draw: both heads pop
     popHead('red');popHead('blue');
     announce('DRAW!');
     setStatus('DRAW! Both blocks knocked off!','ko');
   }
-
   setTimeout(function(){showResult(winner)},1500);
   setTimeout(function(){
     hideAnnounce();resetRobots();slideOut();
@@ -360,87 +343,50 @@ function endFight(){
   },5000);
 }
 
-// ═══ ROBOT ANIMATIONS ═══
 function slideIn(){
-  var r=document.getElementById('red-robot');
-  var b=document.getElementById('blue-robot');
-  r.style.transform='translateX(30px)';
-  b.style.transform='translateX(-30px)';
+  document.getElementById('red-robot').style.transform='translateX(30px)';
+  document.getElementById('blue-robot').style.transform='translateX(-30px)';
 }
 function slideOut(){
-  var r=document.getElementById('red-robot');
-  var b=document.getElementById('blue-robot');
-  r.style.transform='translateX(0)';
-  b.style.transform='translateX(0)';
+  document.getElementById('red-robot').style.transform='translateX(0)';
+  document.getElementById('blue-robot').style.transform='translateX(0)';
 }
-function punchRed(){
-  var a=document.getElementById('red-arm-front');
-  if(a) a.style.transform='rotate(-55deg)';
-}
-function resetRedArm(){
-  var a=document.getElementById('red-arm-front');
-  if(a) a.style.transform='';
-}
-function punchBlue(){
-  var a=document.getElementById('blue-arm-front');
-  if(a) a.style.transform='rotate(-55deg)';
-}
-function resetBlueArm(){
-  var a=document.getElementById('blue-arm-front');
-  if(a) a.style.transform='';
-}
-function recoilRed(){
-  var r=document.getElementById('red-robot');
-  var cur=r.style.transform||'';
-  r.style.transition='transform .1s ease';
-  r.style.transform='translateX(20px)';
-  setTimeout(function(){r.style.transition='transform .3s ease';r.style.transform='translateX(30px)'},150);
-}
-function recoilBlue(){
-  var b=document.getElementById('blue-robot');
-  b.style.transition='transform .1s ease';
-  b.style.transform='translateX(-20px)';
-  setTimeout(function(){b.style.transition='transform .3s ease';b.style.transform='translateX(-30px)'},150);
-}
-function resetRedRecoil(){
-  var r=document.getElementById('red-robot');
-  r.style.transform='translateX(30px)';
-}
-function resetBlueRecoil(){
-  var b=document.getElementById('blue-robot');
-  b.style.transform='translateX(-30px)';
-}
-// HEAD POP — the signature move! Loser's head springs up
+function punchRed(){var a=document.getElementById('red-arm-front');if(a) a.style.transform='rotate(-55deg)';}
+function resetRedArm(){var a=document.getElementById('red-arm-front');if(a) a.style.transform='';}
+function punchBlue(){var a=document.getElementById('blue-arm-front');if(a) a.style.transform='rotate(-55deg)';}
+function resetBlueArm(){var a=document.getElementById('blue-arm-front');if(a) a.style.transform='';}
+function recoilRed(){var r=document.getElementById('red-robot');r.style.transition='transform .1s ease';r.style.transform='translateX(20px)';setTimeout(function(){r.style.transition='transform .3s ease';r.style.transform='translateX(30px)'},150);}
+function recoilBlue(){var b=document.getElementById('blue-robot');b.style.transition='transform .1s ease';b.style.transform='translateX(-20px)';setTimeout(function(){b.style.transition='transform .3s ease';b.style.transform='translateX(-30px)'},150);}
+function resetRedRecoil(){document.getElementById('red-robot').style.transform='translateX(30px)';}
+function resetBlueRecoil(){document.getElementById('blue-robot').style.transform='translateX(-30px)';}
+
 function popHead(side){
-  var h=document.getElementById(side+'-head');
+  var h=document.getElementById(side+"-head");
+  var n=document.getElementById(side+"-neck");
+  var b=document.getElementById(side+"-body");
   if(h){
-    // Spring up with bounce
-    h.style.transition='transform .15s cubic-bezier(.2,.8,.2,1.6)';
-    h.style.transform='translateY(-22px)';
-    // Wobble
-    setTimeout(function(){h.style.transform='translateY(-18px)'},200);
-    setTimeout(function(){h.style.transform='translateY(-22px)'},350);
+    h.style.transition="transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)";
+    h.style.transform="translateY(-28px) rotate(-6deg) scale(1.08)";
+    if(n){
+      n.style.transition="height 0.2s ease, y 0.2s ease";
+      n.setAttribute("height", "28");
+      n.setAttribute("y", "-34");
+    }
+    if(b) b.setAttribute("transform", "translateY(-6px)");
+    setTimeout(function(){h.style.transform="translateY(-24px) rotate(-4deg) scale(1.05)"},180);
+    setTimeout(function(){h.style.transform="translateY(-28px) rotate(-6deg) scale(1.08)"},320);
   }
 }
+
 function resetRobots(){
-  ['red-head','blue-head'].forEach(function(id){
-    var el=document.getElementById(id);
-    if(el){el.style.transition='transform .3s ease';el.style.transform=''}
-  });
-  ['red-arm-front','blue-arm-front'].forEach(function(id){
-    var el=document.getElementById(id);if(el) el.style.transform='';
-  });
-  ['red-robot','blue-robot'].forEach(function(id){
-    var el=document.getElementById(id);if(el) el.style.transform='';
-  });
+  ['red-head','blue-head'].forEach(function(id){var el=document.getElementById(id);if(el){el.style.transition='transform .3s ease';el.style.transform=''}});
+  ['red-neck','blue-neck'].forEach(function(id){var el=document.getElementById(id);if(el){el.setAttribute('height','8');el.setAttribute('y','-14');el.style.transition='';}});
+  ['red-body','blue-body'].forEach(function(id){var el=document.getElementById(id);if(el) el.setAttribute('transform', '');});
+  ['red-arm-front','blue-arm-front'].forEach(function(id){var el=document.getElementById(id);if(el) el.style.transform='';});
+  ['red-robot','blue-robot'].forEach(function(id){var el=document.getElementById(id);if(el) el.style.transform='';});
 }
 
-// ═══ UI HELPERS ═══
-function announce(text){
-  var el=document.getElementById('announce');
-  el.innerHTML=text.replace('\\n','<br>');
-  el.className='announce show';
-}
+function announce(text){var el=document.getElementById('announce');el.innerHTML=text.replace('\\n','<br>');el.className='announce show';}
 function hideAnnounce(){document.getElementById('announce').className='announce'}
 function updateHP(){
   document.getElementById('red-hp').style.width=Math.max(0,redHP)+'%';
@@ -448,14 +394,8 @@ function updateHP(){
   document.getElementById('red-hp-txt').textContent=Math.max(0,redHP);
   document.getElementById('blue-hp-txt').textContent=Math.max(0,blueHP);
 }
-function updateTimer(){
-  var m=Math.floor(timerSec/60),s=timerSec%60;
-  document.getElementById('timer-display').textContent=m+':'+(s<10?'0':'')+s;
-}
-function setStatus(msg,type){
-  var el=document.getElementById('status-msg');el.textContent=msg;
-  el.className=type==='ko'?'status ko':type?'status active':'status';
-}
+function updateTimer(){var m=Math.floor(timerSec/60),s=timerSec%60;document.getElementById('timer-display').textContent=m+':'+(s<10?'0':'')+s;}
+function setStatus(msg,type){var el=document.getElementById('status-msg');el.textContent=msg;el.className=type==='ko'?'status ko':type?'status active':'status';}
 function showResult(side){
   var card=document.getElementById('result-card'),body=document.getElementById('result-body');
   var ri=document.getElementById('red-sel').value, bi=document.getElementById('blue-sel').value;
@@ -471,7 +411,6 @@ function showResult(side){
 }
 function hideResult(){document.getElementById('result-card').className='result-card'}
 
-// ═══ LEADERBOARD ═══
 function renderLeaderboard(){
   var p=document.getElementById('panel-leaderboard');
   if(!all.length){p.innerHTML='<div class="empty">No data yet</div>';return}
@@ -516,7 +455,6 @@ function renderEvolution(){
 init();
 </script></body></html>'''
 
-# ═══ STREAMLIT PAGES ═══
 st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap');
 .correction-card{background:rgba(251,191,36,.05);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:.8rem 1rem;margin-bottom:.6rem}
@@ -527,7 +465,7 @@ wiki = get_wiki()
 
 with st.sidebar:
     st.markdown("### Navigation")
-    page = st.radio("", ["🏟️ Arena","🧪 Rehearsal","📚 Wiki","🎓 Training","🚀 Run"], label_visibility="collapsed")
+    page = st.radio("Navigation", ["🏟️ Arena","🧪 Rehearsal","📚 Wiki","🎓 Training","🚀 Run"], label_visibility="collapsed")
     st.markdown("---")
     if st.button("🔄 Refresh"): st.cache_resource.clear(); st.rerun()
     st.caption("v3.0 · Polyrating · Axiom Wiki")
