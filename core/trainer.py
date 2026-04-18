@@ -3,7 +3,6 @@ import os, yaml, torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, BitsAndBytesConfig
 from datasets import Dataset
 from core.model_hub import ModelHub
-from core.observability import get_observability
 
 try:
     from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
@@ -15,9 +14,7 @@ class DistillationTrainer:
     def __init__(self, config_path="config/models.yaml"):
         self.hub = ModelHub(config_path)
         with open(config_path) as f: self.config = yaml.safe_load(f)
-        self.obs = get_observability()
     def distill(self, teacher_name, student_name, prompts, output_dir, num_epochs=3, use_peft=True, use_qlora=True, lora_r=16, lora_alpha=32):
-        self.obs.trace_distillation(teacher_name, student_name, len(prompts), output_dir)
         print(f"\n🎓 Distillation: {teacher_name} → {student_name}")
         texts = [f"### Instruction:\n{p}\n\n### Response:\n{self.hub.generate_response(teacher_name, p, max_tokens=200)}" for p in prompts]
         info = self.hub.get_model_info(student_name)
