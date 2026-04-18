@@ -543,3 +543,18 @@ elif page == "🚀 Run":
     with t3:
         if st.button("🏟️ Run Arena"):
             subprocess.Popen(["python","arena.py","--arena"],cwd=str(Path(__file__).parent));st.info("Running…")
+
+# --- Observability Tab ---
+with st.expander("🔍 Observability (Opik Traces)"):
+    try:
+        from core.observability import get_observability, OPIK_AVAILABLE
+        obs = get_observability()
+        trace_url = obs.get_trace_url()
+        if trace_url:
+            st.markdown(f"[📊 View Full Trace in Opik]({trace_url})")
+        if OPIK_AVAILABLE:
+            st.success("Opik integration active - traces are being recorded.")
+        else:
+            st.warning("Opik not installed. Run: pip install opik")
+    except ImportError:
+        st.info("Opik observability module not yet available.")
