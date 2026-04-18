@@ -1,6 +1,7 @@
 # 🏟️ Training Arena v3.0
 
 **Self-improving LLM platform with real evaluation, Axiom Wiki integration, and TREX-inspired tree-based evolution.**
+> 🔗 **[Project Page](https://ChrisX101010.github.io/training-arena/)** · [Axiom Wiki](https://github.com/abubakarsiddik31/axiom-wiki) · [Polyrating](https://github.com/eth-sri/polyrating)
 
 Beat MiniMax M2.7 at its own game — open-source, on consumer hardware.
 
