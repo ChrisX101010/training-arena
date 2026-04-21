@@ -1,19 +1,26 @@
-torch>=2.0.0
-transformers>=4.40.0
-datasets>=2.14.0
-accelerate>=0.20.0
-streamlit>=1.28.0
-pandas>=2.0.0
-numpy>=1.24.0
+# Core
 pyyaml>=6.0
-gitpython>=3.1.0
-chromadb>=0.4.0
-sentence-transformers>=2.2.0
-peft>=0.10.0
-trl>=0.11.0
-bitsandbytes>=0.41.0
-opik>=0.1.0
-vllm>=0.6.0
-ollama>=0.1.0
-requests>=2.31.0
-tqdm>=4.66.0
+torch>=2.0
+transformers>=4.35
+datasets>=2.14
+
+# PEFT/LoRA (fits training on 4GB VRAM)
+peft>=0.10
+trl>=0.8
+bitsandbytes>=0.41
+
+# Rating system
+# pip install git+https://github.com/eth-sri/polyrating.git
+
+# Wiki
+gitpython>=3.1
+
+# Dashboard
+streamlit>=1.28
+pandas>=2.0
+
+# Ollama client
+ollama>=0.1
+
+# Optional: Axiom Wiki — npm install -g axiom-wiki
+# Optional: LARQL — cargo install larql

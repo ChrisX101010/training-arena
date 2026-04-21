@@ -23,6 +23,7 @@ from core.evaluation_rubric import EvaluationRubric
 from core.trainer import DistillationTrainer
 from core.llm_wiki import LLMWiki
 from core.rehearsal_gym import RehearsalGym
+from core.larql_integration import get_larql
 
 
 class Bootcamp:
@@ -59,6 +60,7 @@ class Bootcamp:
         self.trainer = DistillationTrainer(config_path)
         self.wiki = LLMWiki()
         self.gym = RehearsalGym(self.hub)
+        self.larql = get_larql()
 
         import yaml
         with open(config_path) as f:
@@ -160,6 +162,19 @@ class Bootcamp:
             output_path = f"./results/bootcamp/{student.replace('/', '_')}/round_{rnd}"
             print("  🔥 Distilling…")
             self.trainer.distill(teacher, student, training_texts, output_path, num_epochs=2)
+
+            # 3b. LARQL VERIFICATION (if available)
+            if self.larql.available:
+                vindex = self.larql.extract_index(output_path + "/final",
+                                                   f"bootcamp_r{rnd}.vindex")
+                if vindex:
+                    concepts = list(probes.get(weakest, probes["knowledge"]))[:3]
+                    concept_words = [c.split()[-1].rstrip("?.")
+                                    for c in concepts if len(c.split()) > 2]
+                    if concept_words:
+                        verifications = self.larql.verify_knowledge(vindex, concept_words)
+                        verified = sum(1 for v in verifications if v.found)
+                        print(f"  🔬 Weight verification: {verified}/{len(concept_words)} concepts found")
 
             # 4. RECORD
             self.db.record_training_run(teacher, student, "bootcamp", rnd,

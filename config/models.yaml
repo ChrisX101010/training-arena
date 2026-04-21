@@ -4,7 +4,7 @@ arena:
   max_prompts_per_match: 7
 
 models:
-  # HuggingFace models
+  # HuggingFace models (distillation targets)
   - name: gpt2
     provider: huggingface
     role: contestant
@@ -15,11 +15,12 @@ models:
     provider: huggingface
     role: contestant
 
-  # Qwen 3.5 (upgrade path — install via Ollama: ollama pull qwen3.5:4b)
+  # Qwen 3.5 via Ollama (strong contestant — uncomment when installed)
+  # Install: ollama pull qwen3.5:4b
   # - name: qwen3.5:4b
   #   provider: ollama
   #   role: contestant
-  #   description: "Qwen 3.5 4B — sweet spot for RTX 3050 4GB (Q4)"
+  #   description: "Qwen 3.5 4B — best perf/VRAM ratio for RTX 3050"
 
   # Ollama models
   - name: phi3:mini
@@ -31,23 +32,18 @@ models:
     role: contestant
     enabled: false
 
-  # Distilled models (auto-generated)
-  - name: gpt2-round_1
-    path: ./results/bootcamp/round_1/gpt2/final
-    provider: huggingface
-    role: distilled
-  - name: distilgpt2-round_1
-    path: ./results/bootcamp/round_1/distilgpt2/final
-    provider: huggingface
-    role: distilled
-
 training:
   student_model: distilgpt2
   output_dir: ./results/distilled
   num_epochs: 3
-  learning_rate: 5e-5
+  learning_rate: 2e-4
   batch_size: 2
-  max_length: 128
+  max_length: 512
+  # PEFT/LoRA config
+  use_peft: true
+  use_qlora: true
+  lora_r: 16
+  lora_alpha: 32
   exclude_from_training:
     - phi3:mini
     - llama3.2:1b
@@ -57,10 +53,17 @@ wiki:
   path: ./llm_wiki
   auto_pull: true
   remote_url: ""
-  # Axiom Wiki integration (Karpathy compounding pattern)
-  # Set this to your local axiom-wiki directory
   axiom_wiki_path: ""
-  # Or install globally: npm install -g axiom-wiki
+
+# LARQL weight-level verification (optional)
+# Install: cargo install larql
+larql:
+  vindex_dir: ./vindexes
+  auto_verify: true
+  verify_concepts_per_domain:
+    knowledge: ["France", "Shakespeare", "colors"]
+    math: ["addition", "algebra", "equation"]
+    science: ["gravity", "photosynthesis", "water"]
 
 dashboard:
   host: 0.0.0.0
